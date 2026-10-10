@@ -6,7 +6,21 @@ import "./App.css";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-
+import { Node3DService, Node3D } from "./lib/Node3d";
+import { ChildModel, ParentModel } from "./lib/ParentModel";
+import { GizmoManager } from "./lib/GizmoManager";
+function findParentWithUserData(
+  object: THREE.Object3D<THREE.Object3DEventMap>,
+) {
+  let current: THREE.Object3D<THREE.Object3DEventMap> | null = object;
+  while (current) {
+    if (current.userData?.type) {
+      return current;
+    }
+    current = current.parent;
+  }
+  return null;
+}
 function addLights(scene: THREE.Scene<THREE.Object3DEventMap>) {
   const ambientLight = new THREE.AmbientLight(0xffffff, 1.0); // white light, low intensity
   scene.add(ambientLight);
@@ -75,25 +89,40 @@ function App() {
   const mouseRef = useRef(new THREE.Vector2());
   const raycasterRef = useRef(new THREE.Raycaster());
   const sceneRef = useRef<THREE.Scene<THREE.Object3DEventMap> | null>(null);
-  const parentRef = useRef<THREE.Group<THREE.Object3DEventMap> | null>(null);
-  const childrenRef = useRef<THREE.Group<THREE.Object3DEventMap>[]>([]);
-
+  const parentRef = useRef<ParentModel | null>(null);
+  const childrenRef = useRef<ChildModel[]>([]);
+  const node3DService = new Node3DService();
+  const selectedModel = useRef(null);
+  const gizmoManagerRef = useRef<GizmoManager | null>(null);
   useEffect(() => {
     let currentBoxHelper: THREE.Box3Helper | null = null;
     if (!canvasRef.current) return;
     const { scene, camera, renderer, controls } = setupScene(canvasRef.current);
     sceneRef.current = scene;
+
+    let isLocked = false;
     const loadScene = async () => {
-      const furniture = await fetchGLB("/models/Desk.glb");
-      parentRef.current = furniture;
-      furniture.scale.setScalar(0.2);
-      scene.add(furniture);
+      const parentNode = new Node3D("table", node3DService);
+      const childNode = new Node3D("item", node3DService);
 
-      const model = await fetchGLB("/models/mug.glb");
-      model.scale.setScalar(0.01);
-      childrenRef.current.push(model);
+      Promise.all([
+        parentNode.loadFromGlb("table-m"),
+        childNode.loadFromGlb("item-m"),
+      ]).then(() => {
+        const parent = new ParentModel(parentNode);
 
-      scene.add(model);
+        const child = parent.addChild(childNode);
+        parentRef.current = parent;
+        childrenRef.current.push(child);
+        scene.add(parent.model);
+
+        gizmoManagerRef.current = new GizmoManager(
+          scene,
+          renderer,
+          camera,
+          controls,
+        );
+      });
       renderer.render(scene, camera);
       const animate = () => {
         requestAnimationFrame(animate);
@@ -108,6 +137,7 @@ function App() {
     loadScene();
 
     const onMouseHover = (event: MouseEvent) => {
+      if (isLocked) return;
       // we normalise
       mouseRef.current.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouseRef.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -115,14 +145,14 @@ function App() {
       // raycaster
       raycasterRef.current.setFromCamera(mouseRef.current, camera);
 
-      const selectableObjects = [];
+      const selectableObjects: THREE.Object3D<THREE.Object3DEventMap>[] = [];
 
       if (parentRef.current) {
-        selectableObjects.push(parentRef.current);
+        selectableObjects.push(parentRef.current.model);
       }
 
       childrenRef.current.forEach((child) => {
-        selectableObjects.push(child);
+        selectableObjects.push(child.model);
       });
       const intersects = raycasterRef.current.intersectObjects(
         selectableObjects,
@@ -153,6 +183,70 @@ function App() {
     };
 
     window.addEventListener("mousemove", onMouseHover);
+
+    const onMouseClick = (event: MouseEvent) => {
+      // we normalise
+      mouseRef.current.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouseRef.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      // raycaster
+      raycasterRef.current.setFromCamera(mouseRef.current, camera);
+
+      const selectableObjects: THREE.Object3D<THREE.Object3DEventMap>[] = [];
+
+      if (parentRef.current) {
+        selectableObjects.push(parentRef.current.model);
+      }
+
+      childrenRef.current.forEach((child) => {
+        selectableObjects.push(child.model);
+      });
+
+      const intersectObjects =
+        raycasterRef.current.intersectObjects(selectableObjects);
+
+      if (intersectObjects.length > 0) {
+        const selectedObject = intersectObjects[0];
+        const parentWithUserData = findParentWithUserData(
+          selectedObject.object,
+        );
+
+        if (parentWithUserData) {
+          isLocked = true;
+          const node = parentWithUserData.userData.instance.node3D;
+          selectedModel.current = node;
+          console.log("item is now locked .. ");
+          gizmoManagerRef.current?.attachToNode3D(node);
+          if (currentBoxHelper) {
+            sceneRef.current?.remove(currentBoxHelper);
+            currentBoxHelper = null;
+          }
+        }
+      } else {
+        isLocked = false;
+        console.log("the item is now unlocked");
+        gizmoManagerRef.current?.detach();
+      }
+    };
+
+    window.addEventListener("mousedown", onMouseClick);
+    const onResize = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    };
+
+    window.addEventListener("resize", onResize);
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseHover);
+      renderer.dispose();
+    };
   }, []);
   return (
     <div>
