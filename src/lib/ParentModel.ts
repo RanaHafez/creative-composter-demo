@@ -7,16 +7,24 @@ class ParentModel {
   children: ChildModel[];
   boundingBox = new THREE.Box3();
   size = new THREE.Vector3();
-
-  constructor(node3D: Node3D) {
-    this.node3d = node3D;
-    this.model = node3D.root;
+  intitialState = {
+    transform: new THREE.Vector3(),
+    rotation: new THREE.Euler(),
+    scale: new THREE.Vector3(),
+  };
+  constructor(node3d: Node3D) {
+    this.node3d = node3d;
+    this.model = node3d.root;
 
     this.model.userData.type = "parent";
     this.model.userData.instance = this;
     this.children = [];
     // update dimenstions
     this.updateDimenstions();
+
+    this.intitialState.transform.copy(this.model.position);
+    this.intitialState.rotation.copy(this.model.rotation);
+    this.intitialState.scale.copy(this.model.scale);
   }
 
   updateDimenstions() {
@@ -27,6 +35,11 @@ class ParentModel {
   addChild(child: Node3D) {
     const c = new ChildModel(child, this);
     this.putChildOnTop(c);
+
+    c.intitialState.transform.copy(c.model.position);
+    c.intitialState.rotation.copy(c.model.rotation);
+    c.intitialState.scale.copy(c.model.scale);
+
     this.children.push(c);
     this.model.add(c.model);
     c.updateConstraints();
@@ -38,7 +51,7 @@ class ParentModel {
 
     const startY = this.boundingBox.max.y + 1;
 
-    child.node3D.setPosition(
+    child.node3d.setPosition(
       this.model.position.x,
       startY,
       this.model.position.z,
@@ -52,13 +65,13 @@ class ParentModel {
     const intersects = raycaster.intersectObject(this.model, true);
     if (intersects.length > 0) {
       const hitPoint = intersects[0].point;
-      child.node3D.setPosition(hitPoint.x, hitPoint.y, hitPoint.z);
+      child.node3d.setPosition(hitPoint.x, hitPoint.y, hitPoint.z);
     }
   }
 }
 
 class ChildModel {
-  node3D: Node3D;
+  node3d: Node3D;
   model: THREE.Object3D<THREE.Object3DEventMap>;
   constraints = {
     minX: 0,
@@ -68,10 +81,15 @@ class ChildModel {
   };
   parent: ParentModel;
   originalY: number;
-  constructor(node3D: Node3D, parent: ParentModel) {
-    this.node3D = node3D;
+  intitialState = {
+    transform: new THREE.Vector3(),
+    rotation: new THREE.Euler(),
+    scale: new THREE.Vector3(),
+  };
+  constructor(node3d: Node3D, parent: ParentModel) {
+    this.node3d = node3d;
     this.parent = parent;
-    this.model = node3D.root;
+    this.model = node3d.root;
     this.model.userData.type = "child";
     this.model.userData.instance = this;
     this.originalY = this.model.position.y;
@@ -100,7 +118,7 @@ class ChildModel {
       this.constraints.minZ,
       this.constraints.maxZ,
     );
-    this.node3D.setPosition(pos.x, pos.y, pos.z); // Update Node3D
+    this.node3d.setPosition(pos.x, pos.y, pos.z); // Update node3d
   }
 }
 

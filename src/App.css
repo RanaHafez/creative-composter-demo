@@ -1,7 +1,6 @@
 #root {
   width: 100vw;
   height: 100vh;
-
 }
 
 body {
@@ -14,4 +13,11 @@ body {
   width: 100vw;
   height: 100vh;
   margin: 0 !important;
+  position: relative;
+}
+
+.side-panel {
+  position: absolute;
+  left: 0;
+  top: 0;
 }
