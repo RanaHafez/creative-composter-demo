@@ -11,9 +11,14 @@ import { useScene } from "../scene/SceneContext";
 type SetupCanvasProps = {
   selectedModelRef: React.RefObject<THREE.Object3D | null>;
   controller: SceneController;
+  onSelectionChange: (model: THREE.Object3D | null) => void;
 };
 
-function SetupCanvas({ selectedModelRef, controller }: SetupCanvasProps) {
+function SetupCanvas({
+  selectedModelRef,
+  controller,
+  onSelectionChange,
+}: SetupCanvasProps) {
   console.log("props controller:", controller);
   const { setScene } = useScene();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -39,6 +44,7 @@ function SetupCanvas({ selectedModelRef, controller }: SetupCanvasProps) {
         renderer,
         camera,
         controls,
+        onSelectionChange,
       );
 
       disposeInteractions = attachInteractions(
@@ -50,6 +56,7 @@ function SetupCanvas({ selectedModelRef, controller }: SetupCanvasProps) {
         controller.gizmoManager,
         controller,
         renderer,
+        onSelectionChange,
       );
       renderer.render(scene, camera);
       const animate = () => {

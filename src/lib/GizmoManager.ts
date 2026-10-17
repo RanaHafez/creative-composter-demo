@@ -14,17 +14,20 @@ class GizmoManager {
   orbitControls: OrbitControls<THREE.PerspectiveCamera>;
   transformControls: TransformControls;
   selectedNode3D: Node3D | null;
+  onTransfromChange: (model: THREE.Object3D | null) => void;
+
   constructor(
     scene: THREE.Scene<THREE.Object3DEventMap>,
     renderer: THREE.WebGLRenderer,
     camera: THREE.PerspectiveCamera,
     orbitControls: OrbitControls<THREE.PerspectiveCamera>,
+    onTransfromChange: (model: THREE.Object3D | null) => void,
   ) {
     this.scene = scene;
     this.renderer = renderer;
     this.camera = camera;
     this.orbitControls = orbitControls;
-
+    this.onTransfromChange = onTransfromChange;
     this.transformControls = new TransformControls(camera, renderer.domElement);
     this.selectedNode3D = null; // Track Node3D instance
     // this.hoveredObject = null;
@@ -52,6 +55,10 @@ class GizmoManager {
     });
 
     this.setSnapSettings(0.5, THREE.MathUtils.degToRad(15), 0.1);
+    this.transformControls.addEventListener("objectChange", () => {
+      const model = this.transformControls.object;
+      if (model) this.onTransfromChange(model);
+    });
   }
 
   setSnapSettings(translation: number, rotation: number, scale: number) {

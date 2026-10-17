@@ -25,6 +25,7 @@ function attachInteractions(
   gizmoManagerRef: GizmoManager | null,
   controller: SceneController,
   renderer: THREE.WebGLRenderer,
+  onSelectionChange: (model: THREE.Object3D | null) => void,
 ) {
   let isLocked = false;
   const mouse = new THREE.Vector2();
@@ -105,7 +106,9 @@ function attachInteractions(
       if (parentWithUserData) {
         isLocked = true;
         const node = parentWithUserData.userData.instance.node3d;
-        selectedModel.current = node;
+        selectedModel.current = node.root;
+        console.log("here .. ");
+        onSelectionChange(selectedModel.current);
         gizmoManagerRef?.attachToNode3D(node);
         if (controller.boxHelper) {
           sceneRef.current?.remove(controller.boxHelper);
@@ -114,6 +117,8 @@ function attachInteractions(
       }
     } else {
       isLocked = false;
+      // selectedModel.current = null;
+      // onSelectionChange(null);
       console.log("the item is now unlocked");
       gizmoManagerRef?.detach();
     }

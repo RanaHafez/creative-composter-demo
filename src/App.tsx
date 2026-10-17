@@ -6,9 +6,19 @@ import * as THREE from "three";
 import { SceneController } from "./lib/sceneController";
 import { SceneProvider } from "./scene/SceneContext";
 import PanelShell from "./components/PanelShell";
+import usePanelVal from "./hooks/usePanelVal";
 function App() {
   const selectedModelRef = useRef<THREE.Object3D | null>(null);
   const [controller] = useState(() => new SceneController());
+  const {
+    position,
+    setPosition,
+    rotation,
+    setRotation,
+    scale,
+    setScale,
+    syncModel,
+  } = usePanelVal();
 
   console.log("App controller:", controller); // ← ضيف ده
   return (
@@ -17,11 +27,18 @@ function App() {
         <SetupCanvas
           selectedModelRef={selectedModelRef}
           controller={controller}
+          onSelectionChange={syncModel}
         />
 
         <SidePanel
           selectedModelRef={selectedModelRef}
           controller={controller}
+          position={position}
+          onPositionChange={setPosition}
+          rotation={rotation}
+          onRotationChange={setRotation}
+          scale={scale}
+          onScaleChange={setScale}
         />
       </div>
     </SceneProvider>
