@@ -20,4 +20,14 @@ body {
   position: absolute;
   left: 0;
   top: 0;
+  background: rgba(26, 28, 30, 0.7);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(6.9px);
+  border: 1px solid rgba(26, 28, 30, 0.62);
+  width: 25vw;
+  color: #f0f2f4;
+  padding: 10px;
+  margin: 10px;
 }

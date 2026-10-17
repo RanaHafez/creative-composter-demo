@@ -68,8 +68,8 @@ class GizmoManager {
       this.transformControls.showZ = false;
     } else if (mode === "scale") {
       this.transformControls.showX = true;
-      this.transformControls.showY = false;
-      this.transformControls.showZ = false;
+      this.transformControls.showY = true;
+      this.transformControls.showZ = true;
     } else {
       this.transformControls.showX = true;
       this.transformControls.showY = true;

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { ParentModel, ChildModel } from "../lib/ParentModel";
 import { GizmoManager } from "../lib/GizmoManager";
+import { SceneController } from "../lib/sceneController";
 
 function findParentWithUserData(
   object: THREE.Object3D<THREE.Object3DEventMap>,
@@ -22,9 +23,9 @@ function attachInteractions(
   sceneRef: React.RefObject<THREE.Scene<THREE.Object3DEventMap> | null>,
   selectedModel: React.RefObject<THREE.Object3D | null>,
   gizmoManagerRef: GizmoManager | null,
+  controller: SceneController,
   renderer: THREE.WebGLRenderer,
 ) {
-  let currentBoxHelper: THREE.Box3Helper | null = null;
   let isLocked = false;
   const mouse = new THREE.Vector2();
   const raycaster = new THREE.Raycaster();
@@ -52,22 +53,22 @@ function attachInteractions(
     if (intersects.length > 0) {
       const selectedIntersect = intersects[0];
 
-      if (currentBoxHelper != null) {
-        sceneRef.current?.remove(currentBoxHelper);
-        currentBoxHelper = null;
+      if (controller.boxHelper != null) {
+        sceneRef.current?.remove(controller.boxHelper);
+        controller.boxHelper = null;
       }
       const box = new THREE.Box3().setFromObject(selectedIntersect.object);
       const boxHelper = new THREE.Box3Helper(box, 0x8dd8ff);
 
-      currentBoxHelper = boxHelper;
+      controller.boxHelper = boxHelper;
 
       if (sceneRef.current) {
-        sceneRef.current.add(currentBoxHelper);
+        sceneRef.current.add(controller.boxHelper);
       }
     } else {
-      if (currentBoxHelper != null) {
-        sceneRef.current?.remove(currentBoxHelper);
-        currentBoxHelper = null;
+      if (controller.boxHelper != null) {
+        sceneRef.current?.remove(controller.boxHelper);
+        controller.boxHelper = null;
       }
     }
   };
@@ -106,9 +107,9 @@ function attachInteractions(
         const node = parentWithUserData.userData.instance.node3d;
         selectedModel.current = node;
         gizmoManagerRef?.attachToNode3D(node);
-        if (currentBoxHelper) {
-          sceneRef.current?.remove(currentBoxHelper);
-          currentBoxHelper = null;
+        if (controller.boxHelper) {
+          sceneRef.current?.remove(controller.boxHelper);
+          controller.boxHelper = null;
         }
       }
     } else {
