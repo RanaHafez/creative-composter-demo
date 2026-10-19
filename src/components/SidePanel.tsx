@@ -2,7 +2,11 @@ import type { SceneController } from "../lib/sceneController";
 import { useScene } from "../scene/SceneContext";
 import * as THREE from "three";
 import type { Vector3 } from "../hooks/usePanelVal";
-
+import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
+import { GLTFLoader } from "three/examples/jsm/Addons.js";
+import { ChildModel, ParentModel } from "../lib/ParentModel";
+import { Node3D, Node3DService } from "../lib/Node3d";
+import { createPackedSphericalHarmonicsBand } from "three/examples/jsm/utils/GaussianSplatUtils.js";
 type SidePanelProps = {
   selectedModelRef: React.RefObject<THREE.Object3D | null>;
   controller: SceneController;
@@ -66,6 +70,36 @@ function SidePanel({
     }
     controller.boxHelper = null;
   };
+
+  const handleDownload = () => {
+    const exporter = new GLTFExporter();
+    try {
+      if (controller.parent) {
+        exporter.parse(
+          controller.parent.model,
+          (result) => {
+            const blob = new Blob([result as ArrayBuffer], {
+              type: "model/gltf-binary",
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "scene.glb";
+            a.click();
+            URL.revokeObjectURL(url);
+          },
+          (error) => {
+            console.log(error);
+          },
+          { binary: true },
+        );
+      }
+    } catch (e) {
+      console.log(`Error ${e}`);
+    }
+  };
+
+  function uploadAsset() {}
   return (
     <div className="side-panel">
       <div>
@@ -210,6 +244,32 @@ function SidePanel({
       >
         Reset Changes
       </button>
+
+      <button
+        className="rounded m-4 px-3 py-2 bg-amber-600 cursor-pointer"
+        onClick={handleDownload}
+      >
+        Download Output
+      </button>
+      <input
+        className="rounded m-4 px-3 py-2 bg-amber-600 cursor-pointer"
+        type="file"
+        onChange={async (e) => {
+          // URL.createObjectURL();
+          if (e.target.files) {
+            const file = e.target.files[0];
+            console.log(typeof file);
+            // this is a temporary link
+            const url = URL.createObjectURL(file);
+            const service = new Node3DService();
+            const parentNode = new Node3D(url, service, "upload");
+            await Promise.all([parentNode.loadFromGlb(url)]);
+            const newParent = new ParentModel(parentNode);
+            const oldParent = controller.parent;
+            // here we can change the refrences to the parent and the child
+          }
+        }}
+      />
     </div>
   );
 }

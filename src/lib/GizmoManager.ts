@@ -53,7 +53,19 @@ class GizmoManager {
         obj.userData.instance.clampPosition();
       }
     });
-
+    window.addEventListener("keypress", (event) => {
+      switch (event.key) {
+        case "p":
+          this.setMode("translate");
+          break;
+        case "r":
+          this.setMode("rotate");
+          break;
+        case "s":
+          this.setMode("scale");
+          break;
+      }
+    });
     this.setSnapSettings(0.5, THREE.MathUtils.degToRad(15), 0.1);
     this.transformControls.addEventListener("objectChange", () => {
       const model = this.transformControls.object;

@@ -3,8 +3,8 @@ import { ParentModel } from "../lib/ParentModel";
 
 async function loadSceneModels() {
   const node3DService = new Node3DService();
-  const parentNode = new Node3D("table", node3DService);
-  const childNode = new Node3D("item", node3DService);
+  const parentNode = new Node3D("table", node3DService, "builtin");
+  const childNode = new Node3D("item", node3DService, "builtin");
 
   await Promise.all([
     parentNode.loadFromGlb("table-m"),
