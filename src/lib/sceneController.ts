@@ -1,4 +1,4 @@
-import { ParentModel } from "./ParentModel";
+import { ChildModel, ParentModel } from "./ParentModel";
 import { GizmoManager } from "./GizmoManager";
 import { Node3D } from "./Node3d";
 import * as THREE from "three";
@@ -8,6 +8,7 @@ class SceneController {
   gizmoManager: GizmoManager | null = null;
   selected: Node3D | null = null;
   boxHelper: THREE.Box3Helper | null = null;
+  child: ChildModel | null = null;
 
   resetAll() {
     this.parent?.model.position.copy(this.parent?.intitialState.transform);

@@ -1,11 +1,10 @@
-import React, { useState } from "react";
-import SidePanel from "./SidePanel";
+import { useState } from "react";
 import type { SceneController } from "../lib/sceneController";
 type Props = {
   controller: SceneController;
 };
 
-function PanelShell({ controller }: Props) {
+function PanelShell({}: Props) {
   const [open, setOpen] = useState(true);
   return (
     <div

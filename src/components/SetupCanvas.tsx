@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { ChildModel } from "../lib/ParentModel";
 import { GizmoManager } from "../lib/GizmoManager";
 import { setupScene } from "../scene/createScene";
 import { attachInteractions } from "../scene/sceneInteraction";
@@ -23,7 +22,6 @@ function SetupCanvas({
   const { setScene } = useScene();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sceneRef = useRef<THREE.Scene<THREE.Object3DEventMap> | null>(null);
-  const childrenRef = useRef<ChildModel[]>([]);
   let disposeInteractions: (() => void) | undefined;
 
   useEffect(() => {
@@ -34,9 +32,8 @@ function SetupCanvas({
     sceneRef.current = scene;
     setScene(scene);
     const loadScene = async () => {
-      const { child, parent } = await loadSceneModels();
+      const { parent } = await loadSceneModels();
       controller.parent = parent;
-      childrenRef.current.push(child);
       scene.add(parent.model);
 
       controller.gizmoManager = new GizmoManager(
@@ -49,8 +46,6 @@ function SetupCanvas({
 
       disposeInteractions = attachInteractions(
         camera,
-        controller.parent,
-        childrenRef,
         sceneRef,
         selectedModelRef,
         controller.gizmoManager,

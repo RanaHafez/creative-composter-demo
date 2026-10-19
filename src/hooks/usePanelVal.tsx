@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { Node3D } from "../lib/Node3d";
 import * as THREE from "three";
 
 type Vector3 = { x: number; y: number; z: number };

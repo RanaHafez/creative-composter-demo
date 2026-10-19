@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { ParentModel, ChildModel } from "../lib/ParentModel";
 import { GizmoManager } from "../lib/GizmoManager";
 import { SceneController } from "../lib/sceneController";
 
@@ -18,8 +17,6 @@ function findParentWithUserData(
 
 function attachInteractions(
   camera: THREE.PerspectiveCamera,
-  parentRef: ParentModel | null,
-  childrenRef: React.RefObject<ChildModel[]>,
   sceneRef: React.RefObject<THREE.Scene<THREE.Object3DEventMap> | null>,
   selectedModel: React.RefObject<THREE.Object3D | null>,
   gizmoManagerRef: GizmoManager | null,
@@ -30,7 +27,6 @@ function attachInteractions(
   let isLocked = false;
   const mouse = new THREE.Vector2();
   const raycaster = new THREE.Raycaster();
-
   const onMouseHover = (event: MouseEvent) => {
     if (isLocked) return;
     // we normalise
@@ -40,15 +36,8 @@ function attachInteractions(
     // raycaster
     raycaster.setFromCamera(mouse, camera);
 
-    const selectableObjects: THREE.Object3D<THREE.Object3DEventMap>[] = [];
-
-    if (parentRef) {
-      selectableObjects.push(parentRef.model);
-    }
-
-    childrenRef.current.forEach((child) => {
-      selectableObjects.push(child.model);
-    });
+    const parent = controller.parent;
+    const selectableObjects = parent ? [parent.model] : [];
     const intersects = raycaster.intersectObjects(selectableObjects, true);
 
     if (intersects.length > 0) {
@@ -84,15 +73,8 @@ function attachInteractions(
     // raycaster
     raycaster.setFromCamera(mouse, camera);
 
-    const selectableObjects: THREE.Object3D<THREE.Object3DEventMap>[] = [];
-
-    if (parentRef) {
-      selectableObjects.push(parentRef.model);
-    }
-
-    childrenRef.current.forEach((child) => {
-      selectableObjects.push(child.model);
-    });
+    const parent = controller.parent;
+    const selectableObjects = parent ? [parent.model] : [];
 
     const intersectObjects = raycaster.intersectObjects(
       selectableObjects,

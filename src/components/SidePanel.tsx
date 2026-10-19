@@ -3,10 +3,11 @@ import { useScene } from "../scene/SceneContext";
 import * as THREE from "three";
 import type { Vector3 } from "../hooks/usePanelVal";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
-import { GLTFLoader } from "three/examples/jsm/Addons.js";
-import { ChildModel, ParentModel } from "../lib/ParentModel";
+import { ParentModel } from "../lib/ParentModel";
 import { Node3D, Node3DService } from "../lib/Node3d";
-import { createPackedSphericalHarmonicsBand } from "three/examples/jsm/utils/GaussianSplatUtils.js";
+import { Box, Boxes, Upload } from "lucide-react";
+import { useState } from "react";
+
 type SidePanelProps = {
   selectedModelRef: React.RefObject<THREE.Object3D | null>;
   controller: SceneController;
@@ -63,6 +64,7 @@ function SidePanel({
   onScaleChange,
 }: SidePanelProps) {
   const { scene } = useScene();
+  const [isParentExpaned, setIsParentExpanded] = useState(true);
   const handleReset = () => {
     controller.resetAll();
     if (controller.boxHelper) {
@@ -99,7 +101,6 @@ function SidePanel({
     }
   };
 
-  function uploadAsset() {}
   return (
     <div className="side-panel">
       <div>
@@ -197,9 +198,7 @@ function SidePanel({
               label="x"
               value={scale?.x ?? 0}
               onChange={(value) => {
-                onScaleChange((prev) => {
-                  return { x: value, y: value, z: value };
-                });
+                onScaleChange({ x: value, y: value, z: value });
                 if (selectedModelRef.current) {
                   selectedModelRef.current.scale.x = value;
                   selectedModelRef.current.scale.y = value;
@@ -211,9 +210,7 @@ function SidePanel({
               label="y"
               value={scale?.y ?? 0}
               onChange={(value) => {
-                onScaleChange((prev) => {
-                  return { x: value, y: value, z: value };
-                });
+                onScaleChange({ x: value, y: value, z: value });
                 if (selectedModelRef.current) {
                   selectedModelRef.current.scale.x = value;
                   selectedModelRef.current.scale.y = value;
@@ -225,9 +222,7 @@ function SidePanel({
               label="z"
               value={scale?.z ?? 0}
               onChange={(value) => {
-                onScaleChange((prev) => {
-                  return { x: value, y: value, z: value };
-                });
+                onScaleChange({ x: value, y: value, z: value });
                 if (selectedModelRef.current) {
                   selectedModelRef.current.scale.x = value;
                   selectedModelRef.current.scale.y = value;
@@ -251,22 +246,116 @@ function SidePanel({
       >
         Download Output
       </button>
+      <label
+        htmlFor="parent-input"
+        className="inline-flex items-center gap-2 cursor-pointer rounded-md border-2 border-solid border-white px-4 py-2 text-white hover:bg-white/10 transition-colors"
+      >
+        <Box size={20} color="white" />
+        <span>Upload Parent Model</span>
+      </label>
+
       <input
-        className="rounded m-4 px-3 py-2 bg-amber-600 cursor-pointer"
+        id="parent-input"
+        className="sr-only"
         type="file"
+        accept=".glb,model/gltf-binary"
         onChange={async (e) => {
           // URL.createObjectURL();
           if (e.target.files) {
-            const file = e.target.files[0];
-            console.log(typeof file);
-            // this is a temporary link
+            const file = e.currentTarget.files?.[0];
+            const parent = controller.parent;
+            if (!file || !parent) return;
+
+            const input = e.currentTarget;
             const url = URL.createObjectURL(file);
-            const service = new Node3DService();
-            const parentNode = new Node3D(url, service, "upload");
-            await Promise.all([parentNode.loadFromGlb(url)]);
-            const newParent = new ParentModel(parentNode);
-            const oldParent = controller.parent;
-            // here we can change the refrences to the parent and the child
+
+            try {
+              const parentNode = new Node3D(url, new Node3DService(), "upload");
+              await Promise.all([parentNode.loadFromGlb(url)]);
+              controller.gizmoManager?.detach();
+              if (controller.boxHelper) {
+                scene?.remove(controller.boxHelper);
+                controller.boxHelper.geometry.dispose();
+                controller.boxHelper = null;
+              }
+              selectedModelRef.current = null;
+              onPositionChange(null);
+              onRotationChange(null);
+              onScaleChange(null);
+
+              const newParent = new ParentModel(parentNode);
+              const oldParent = controller.parent;
+              controller.parent = newParent;
+              if (oldParent) {
+                scene?.remove(oldParent?.node3d.root);
+              }
+
+              oldParent?.children.map((child) => {
+                controller.parent?.addChild(child.node3d);
+              });
+              controller.parent.updateDimenstions();
+              scene?.add(controller.parent.model);
+            } catch (e) {
+              URL.revokeObjectURL(url);
+              input.value = "";
+            }
+          }
+        }}
+      />
+
+      <label
+        className="inline-flex items-center gap-2 cursor-pointer rounded-md border-2 border-solid border-white px-4 py-2 text-white hover:bg-white/10 transition-colors"
+        htmlFor="item-input"
+      >
+        <div className="flex flex-row gap-1 items-center">
+          <Boxes size={20} color="white"></Boxes>
+          <p className="">Upload Child Model</p>
+        </div>
+      </label>
+      <input
+        id="item-input"
+        className="hidden"
+        type="file"
+        accept=".glb,model/gltf-binary"
+        onChange={async (event) => {
+          const file = event.currentTarget.files?.[0];
+          const parent = controller.parent;
+          if (!file || !parent) return;
+
+          const input = event.currentTarget;
+          const url = URL.createObjectURL(file);
+          try {
+            const childNode = new Node3D(
+              file.name,
+              new Node3DService(),
+              "upload",
+            );
+            await childNode.loadFromGlb(url);
+            if (controller.parent !== parent) return;
+
+            controller.gizmoManager?.detach();
+            if (controller.boxHelper) {
+              scene?.remove(controller.boxHelper);
+              controller.boxHelper.geometry.dispose();
+              // controller.boxHelper.material.dispose();
+              controller.boxHelper = null;
+            }
+            selectedModelRef.current = null;
+            onPositionChange(null);
+            onRotationChange(null);
+            onScaleChange(null);
+
+            for (const child of parent.children) {
+              parent.model.remove(child.model);
+            }
+            parent.children.length = 0;
+            parent.updateDimenstions();
+            parent.addChild(childNode);
+          } catch (error) {
+            console.error("Could not load replacement item:", error);
+          } finally {
+            URL.revokeObjectURL(url);
+            input.value = "";
           }
         }}
       />
