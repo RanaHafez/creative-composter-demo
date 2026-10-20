@@ -7,6 +7,8 @@ import { ParentModel } from "../lib/ParentModel";
 import { Node3D, Node3DService } from "../lib/Node3d";
 import { Box, Boxes, Upload } from "lucide-react";
 import { useState } from "react";
+import ModelPreview from "./ModelPreview";
+import useUploadModel from "../hooks/useUploadModel";
 
 type SidePanelProps = {
   selectedModelRef: React.RefObject<THREE.Object3D | null>;
@@ -65,6 +67,8 @@ function SidePanel({
 }: SidePanelProps) {
   const { scene } = useScene();
   const [isParentExpaned, setIsParentExpanded] = useState(true);
+
+  const { uploads, setUploads, addUpload } = useUploadModel();
   const handleReset = () => {
     controller.resetAll();
     if (controller.boxHelper) {
@@ -246,6 +250,8 @@ function SidePanel({
       >
         Download Output
       </button>
+
+      <ModelPreview uploads={uploads} />
       <label
         htmlFor="parent-input"
         className="inline-flex items-center gap-2 cursor-pointer rounded-md border-2 border-solid border-white px-4 py-2 text-white hover:bg-white/10 transition-colors"
@@ -268,7 +274,10 @@ function SidePanel({
 
             const input = e.currentTarget;
             const url = URL.createObjectURL(file);
-
+            const upload = addUpload({
+              name: file.name,
+              url: url,
+            });
             try {
               const parentNode = new Node3D(url, new Node3DService(), "upload");
               await Promise.all([parentNode.loadFromGlb(url)]);
@@ -325,6 +334,10 @@ function SidePanel({
           const input = event.currentTarget;
           const url = URL.createObjectURL(file);
           try {
+            const upload = addUpload({
+              url: url,
+              name: file.name,
+            });
             const childNode = new Node3D(
               file.name,
               new Node3DService(),

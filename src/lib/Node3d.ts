@@ -1,6 +1,15 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+export const urlMap = {
+  table: {
+    m: "/models/Desk.glb",
+  },
+  item: {
+    m: "/models/Garnei.glb",
+  },
+};
+
 class Augmentation {
   object3d: THREE.Object3D<THREE.Object3DEventMap>;
   constructor(object3d: THREE.Object3D<THREE.Object3DEventMap>) {
@@ -47,14 +56,7 @@ class Node3DService {
       if (source?.id) {
         const [type, size] = source?.id.split("-");
         console.log(type, size);
-        const urlMap = {
-          table: {
-            m: "/models/Desk.glb",
-          },
-          item: {
-            m: "/models/Garnei.glb",
-          },
-        };
+
         const urls = urlMap[type as keyof typeof urlMap];
         if (!urls) throw new Error(`Frame type "${type}" not found`);
         // const matchedUrl = urls.find((url) => url.endsWith(`${size}.glb`));
